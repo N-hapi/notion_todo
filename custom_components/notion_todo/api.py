@@ -8,7 +8,7 @@ import aiohttp
 import async_timeout
 from datetime import datetime
 
-from .const import NOTION_URL, NOTION_VERSION, TASK_STATUS_PROPERTY, TASK_DATE_PROPERTY, TASK_DESCRIPTION_PROPERTY
+from .const import NOTION_URL, NOTION_VERSION, TASK_STATUS_PROPERTY, TASK_DATE_PROPERTY
 from .notion_property_helper import NotionPropertyHelper as propHelper
 
 
@@ -59,10 +59,19 @@ class NotionApiClient:
 
     async def async_get_data(self) -> any:
         """Get data from the API."""
+        today = datetime.now().strftime("%Y-%m-%d")
         return await self._api_wrapper(
             method="post",
             url=f"{NOTION_URL}/databases/{self._database_id}/query",
-            headers=self._headers
+            headers=self._headers,
+            data={
+                "filter": {
+                    "property": "Due",
+                    "date": {
+                        "on_or_after": today
+                    }
+                }
+            }
         )
 
     async def update_task(
@@ -87,7 +96,6 @@ class NotionApiClient:
         task_data = propHelper.set_property_by_id("title", title, task_data)
         task_data = propHelper.set_property_by_id(TASK_STATUS_PROPERTY, status, task_data)
         task_data = propHelper.set_property_by_id(TASK_DATE_PROPERTY, due, task_data)
-        task_data = propHelper.set_property_by_id(TASK_DESCRIPTION_PROPERTY, description, task_data)
         update_properties = task_data['properties']
         return await self._api_wrapper(
             method="patch",
@@ -143,7 +151,7 @@ class NotionApiClient:
         if not self._task_template:
             database = await self._get_database()
             properties = database['properties']
-            propHelper.del_properties_except(["title", TASK_STATUS_PROPERTY, TASK_DATE_PROPERTY, TASK_DESCRIPTION_PROPERTY], properties)
+            propHelper.del_properties_except(["title", TASK_STATUS_PROPERTY, TASK_DATE_PROPERTY], properties)
             self._task_template = {
                 'parent': {'database_id': self._database_id},
                 'properties': properties

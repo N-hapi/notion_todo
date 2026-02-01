@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, TASK_STATUS_PROPERTY, TASK_DESCRIPTION_PROPERTY, TASK_DATE_PROPERTY
+from .const import DOMAIN, TASK_STATUS_PROPERTY, TASK_DATE_PROPERTY
 from .coordinator import NotionDataUpdateCoordinator
 from .notion_property_helper import NotionPropertyHelper as propHelper
 
@@ -29,10 +29,10 @@ async def async_setup_entry(
         for e in entities
     )
 
-STATUS_IN_PROGRESS = 'in-progress'
-STATUS_ARCHIVED = 'archived'
-STATUS_DONE = 'done'
-STATUS_NOT_STARTED = 'not-started'
+STATUS_IN_PROGRESS = 'In_progress'
+STATUS_ARCHIVED = 'Paused'
+STATUS_DONE = 'Done'
+STATUS_NOT_STARTED = 'Not_started'
 NOTION_TO_HASS_STATUS = {
     STATUS_NOT_STARTED: TodoItemStatus.NEEDS_ACTION,
     STATUS_IN_PROGRESS: TodoItemStatus.NEEDS_ACTION,
@@ -84,7 +84,7 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
                         summary=propHelper.get_property_by_id('title', task),
                         uid=id,
                         status=status,
-                        description=propHelper.get_property_by_id(TASK_DESCRIPTION_PROPERTY, task),
+                        description=None,
                         due=propHelper.get_property_by_id(TASK_DATE_PROPERTY, task)
                     )
                 )
