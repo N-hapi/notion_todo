@@ -12,6 +12,7 @@ from .const import (
     TASK_FROG_PROPERTY,
     TASK_WEEKEND_PROPERTY,
     TASK_10MIN_PROPERTY,
+    TASK_PROJECT_PROPERTY,
 )
 from .coordinator import NotionDataUpdateCoordinator
 from .notion_property_helper import NotionPropertyHelper as propHelper
@@ -29,6 +30,7 @@ async def async_setup_entry(
             NotionTasksWithWeekendSensor(coordinator),
             NotionTasksQuick10MinSensor(coordinator),
             NotionTasksCompletedSensor(coordinator),
+            NotionTasksByProjectSensor(coordinator),
         ]
     )
 
@@ -158,4 +160,47 @@ class NotionTasksCompletedSensor(CoordinatorEntity[NotionDataUpdateCoordinator],
             self._attr_extra_state_attributes = {
                 "tasks": completed_tasks,
             }
+        super()._handle_coordinator_update()
+
+
+class NotionTasksByProjectSensor(CoordinatorEntity[NotionDataUpdateCoordinator], SensorEntity):
+    """Sensor for tasks grouped by project."""
+
+    _attr_name = "Notion Tasks by Project"
+    _attr_unique_id = "notion_tasks_by_project"
+
+    def __init__(self, coordinator: NotionDataUpdateCoordinator) -> None:
+        """Initialize sensor."""
+        super().__init__(coordinator=coordinator)
+        self._attr_unique_id = f"notion_by_project_{coordinator.config_entry.entry_id}"
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        if self.coordinator.data is None:
+            self._attr_native_value = 0
+        else:
+            projects_dict = {}
+            for task in self.coordinator.data['results']:
+                project_ids = propHelper.get_property_by_id(TASK_PROJECT_PROPERTY, task)
+                task_name = propHelper.get_property_by_id('title', task)
+                
+                if project_ids:
+                    # project_ids is a list of project IDs
+                    if isinstance(project_ids, list):
+                        for project_id in project_ids:
+                            if project_id not in projects_dict:
+                                projects_dict[project_id] = []
+                            projects_dict[project_id].append(task_name)
+                else:
+                    # Tasks with no project
+                    if "No Project" not in projects_dict:
+                        projects_dict["No Project"] = []
+                    projects_dict["No Project"].append(task_name)
+            
+            self._attr_native_value = len(projects_dict)
+            self._attr_extra_state_attributes = {
+                "projects": projects_dict,
+            }
+        super()._handle_coordinator_update()
         super()._handle_coordinator_update()
