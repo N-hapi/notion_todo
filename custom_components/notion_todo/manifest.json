@@ -8,5 +8,5 @@
   "documentation": "https://github.com/N-hapi/notion_todo",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/N-hapi/notion_todo/issues",
-  "version": "0.0.6"
+  "version": "0.0.7"
 }
