@@ -52,3 +52,11 @@ If you want to contribute to this please read the [Contribution guidelines](CONT
 [maintenance-shield]: https://img.shields.io/badge/maintainer-JanGiese-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/JanGiese/notion_todo.svg?style=for-the-badge
 [releases]: https://github.com/JanGiese/notion_todo/releases
+
+
+
+
+docker exec homeassistant sh -c 'mv /config/custom_components/notion_todo/notion_todo/* /config/custom_components/notion_todo/ && rmdir /config/custom_components/notion_todo/notion_todo'
+
+
+docker exec homeassistant cat /config/home-assistant.log | grep -i "notion"

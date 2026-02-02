@@ -16,6 +16,7 @@ from .coordinator import NotionDataUpdateCoordinator
 
 PLATFORMS: list[Platform] = [
     Platform.TODO,
+    Platform.SENSOR,
 ]
 
 
