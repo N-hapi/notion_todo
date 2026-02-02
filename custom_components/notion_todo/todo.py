@@ -76,8 +76,11 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
             items = []
             for task in self.coordinator.data['results']:
                 id = task['id']
-                self._status[id] = propHelper.get_property_by_id(TASK_STATUS_PROPERTY, task)
-                status = NOTION_TO_HASS_STATUS[self._status[id]]
+                status_value = propHelper.get_property_by_id(TASK_STATUS_PROPERTY, task)
+                self._status[id] = status_value
+                
+                # Default to NEEDS_ACTION if status not found or unknown
+                status = NOTION_TO_HASS_STATUS.get(status_value, TodoItemStatus.NEEDS_ACTION)
 
                 items.append(
                     TodoItem(
