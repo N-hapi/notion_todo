@@ -180,34 +180,24 @@ class NotionTasksByProjectSensor(CoordinatorEntity[NotionDataUpdateCoordinator],
         if self.coordinator.data is None:
             self._attr_native_value = 0
         else:
-                projects_dict = {}
-                for task in self.coordinator.data['results']:
-                    project_property = propHelper.get_property_by_id(TASK_PROJECT_PROPERTY, task)
-                    task_name = propHelper.get_property_by_id('title', task)
-                    if task_name:
-                        task_name = task_name.strip()
-                    project_names = []
-                    # Extract project names from the select field
-                    if project_property and isinstance(project_property, dict):
-                        select_field = project_property.get('select')
-                        if select_field and isinstance(select_field, dict):
-                            options = select_field.get('options')
-                            if options and isinstance(options, list):
-                                for option in options:
-                                    name = option.get('name')
-                                    if name:
-                                        project_names.append(name)
-                    if project_names:
-                        for project_name in project_names:
-                            if project_name not in projects_dict:
-                                projects_dict[project_name] = []
-                            projects_dict[project_name].append(task_name)
-                    else:
-                        if "No Project" not in projects_dict:
-                            projects_dict["No Project"] = []
-                        projects_dict["No Project"].append(task_name)
-                self._attr_native_value = len(projects_dict)
-                self._attr_extra_state_attributes = {
-                    "projects": projects_dict,
-                }
+            projects_dict = {}
+            for task in self.coordinator.data['results']:
+                # get_property_by_id returns the project name as a string or None
+                project_name = propHelper.get_property_by_id(TASK_PROJECT_PROPERTY, task)
+                task_name = propHelper.get_property_by_id('title', task)
+                if task_name:
+                    task_name = task_name.strip()
+                
+                # Use the project name or "No Project" if None
+                project_key = project_name if project_name else "No Project"
+                
+                # Add task to the appropriate project
+                if project_key not in projects_dict:
+                    projects_dict[project_key] = []
+                projects_dict[project_key].append(task_name)
+            
+            self._attr_native_value = len(projects_dict)
+            self._attr_extra_state_attributes = {
+                "projects": projects_dict,
+            }
         super()._handle_coordinator_update()

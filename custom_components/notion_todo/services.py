@@ -12,9 +12,10 @@ async def async_setup_services(hass: HomeAssistant) -> None:
     async def create_task_service(call: ServiceCall) -> None:
         """Create a new task in Notion."""
         task_name = call.data.get("task_name")
+        # Default to "Household" if not provided
         project = call.data.get("omnifocus_project", "Household")
 
-        # Format select field for Notion
+        # Format select field for Notion API
         project_select = {"select": {"name": project}}
 
         # Get the first coordinator (if multiple entries, use the first one)
@@ -48,8 +49,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
                 },
                 "omnifocus_project": {
                     "type": "string",
-                    "description": "Project for OmniFocus project sync (default: Household)",
-                    "default": "Household"
+                    "description": "OmniFocus project (defaults to Household)",
                 },
             },
             "required": ["task_name"],
