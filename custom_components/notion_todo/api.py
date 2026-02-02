@@ -104,20 +104,22 @@ class NotionApiClient:
             data={"properties": update_properties}
         )
 
-    async def create_task(self, title: str, status: str) -> any:
+    async def create_task(self, title: str, status: str, omnifocus_project: str = "Household") -> any:
         """Create a new task in Notion.
 
         Args:
             title (str): Title of the task
             status (str): Status of the task
-
+            omnifocus_project (str): Project for OmniFocus project sync (default: Household)
         """
+        from .const import TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY
         task_template = await self._get_task_template()
         task_data = task_template.copy()
-        task_data["properties"] = propHelper.del_properties_except(["title", TASK_STATUS_PROPERTY], task_data["properties"])
+        task_data["properties"] = propHelper.del_properties_except(["title", TASK_STATUS_PROPERTY, TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY], task_data["properties"])
         task_data = propHelper.set_property_by_id("title", title, task_data)
         task_data = propHelper.set_property_by_id(TASK_STATUS_PROPERTY, status, task_data)
-
+        # Set OmniFocus project sync field (select)
+        task_data = propHelper.set_property_by_id(TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY, omnifocus_project, task_data)
         return await self._api_wrapper(
             method="post",
             url=f"{NOTION_URL}/pages",

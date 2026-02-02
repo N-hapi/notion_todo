@@ -1,3 +1,4 @@
+TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY = "UYn%5E"  # OmniFocus project sync select field
 """Constants for notion_todo."""
 from logging import Logger, getLogger
 
@@ -18,5 +19,5 @@ TASK_COMPLETED_PROPERTY = "ex%40c"
 TASK_FROG_PROPERTY = "npi%5E"
 TASK_WEEKEND_PROPERTY = "%3CRL%3A"
 TASK_10MIN_PROPERTY = "uUq%5B"
-TASK_PROJECT_PROPERTY = "notion%3A%2F%2Ftasks%2Ftask_to_project_relation"
+TASK_PROJECT_PROPERTY = "%3D%60CR"  
 
