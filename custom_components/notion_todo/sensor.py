@@ -180,27 +180,34 @@ class NotionTasksByProjectSensor(CoordinatorEntity[NotionDataUpdateCoordinator],
         if self.coordinator.data is None:
             self._attr_native_value = 0
         else:
-            projects_dict = {}
-            for task in self.coordinator.data['results']:
-                project_ids = propHelper.get_property_by_id(TASK_PROJECT_PROPERTY, task)
-                task_name = propHelper.get_property_by_id('title', task)
-                
-                if project_ids:
-                    # project_ids is a list of project IDs
-                    if isinstance(project_ids, list):
-                        for project_id in project_ids:
-                            if project_id not in projects_dict:
-                                projects_dict[project_id] = []
-                            projects_dict[project_id].append(task_name)
-                else:
-                    # Tasks with no project
-                    if "No Project" not in projects_dict:
-                        projects_dict["No Project"] = []
-                    projects_dict["No Project"].append(task_name)
-            
-            self._attr_native_value = len(projects_dict)
-            self._attr_extra_state_attributes = {
-                "projects": projects_dict,
-            }
-        super()._handle_coordinator_update()
+                projects_dict = {}
+                for task in self.coordinator.data['results']:
+                    project_property = propHelper.get_property_by_id(TASK_PROJECT_PROPERTY, task)
+                    task_name = propHelper.get_property_by_id('title', task)
+                    if task_name:
+                        task_name = task_name.strip()
+                    project_names = []
+                    # Extract project names from the select field
+                    if project_property and isinstance(project_property, dict):
+                        select_field = project_property.get('select')
+                        if select_field and isinstance(select_field, dict):
+                            options = select_field.get('options')
+                            if options and isinstance(options, list):
+                                for option in options:
+                                    name = option.get('name')
+                                    if name:
+                                        project_names.append(name)
+                    if project_names:
+                        for project_name in project_names:
+                            if project_name not in projects_dict:
+                                projects_dict[project_name] = []
+                            projects_dict[project_name].append(task_name)
+                    else:
+                        if "No Project" not in projects_dict:
+                            projects_dict["No Project"] = []
+                        projects_dict["No Project"].append(task_name)
+                self._attr_native_value = len(projects_dict)
+                self._attr_extra_state_attributes = {
+                    "projects": projects_dict,
+                }
         super()._handle_coordinator_update()
