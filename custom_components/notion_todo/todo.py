@@ -14,7 +14,16 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, TASK_STATUS_PROPERTY, TASK_DATE_PROPERTY
+from .const import (
+    DOMAIN,
+    TASK_STATUS_PROPERTY,
+    TASK_DATE_PROPERTY,
+    TASK_FROG_PROPERTY,
+    TASK_WEEKEND_PROPERTY,
+    TASK_10MIN_PROPERTY,
+    TASK_COMPLETED_PROPERTY,
+    TASK_PROJECT_PROPERTY,
+)
 from .coordinator import NotionDataUpdateCoordinator
 from .notion_property_helper import NotionPropertyHelper as propHelper
 
@@ -23,11 +32,16 @@ async def async_setup_entry(
 ) -> None:
     """Set up the todo platform config entry."""
     coordinator: NotionDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = ['Notion']
-    async_add_entities(
-        NotionTodoListEntity(coordinator, e)
-        for e in entities
-    )
+    
+    entities = [
+        NotionTodoListEntity(coordinator, 'Notion', None),
+        NotionTodoListEntity(coordinator, 'Notion Frog Tasks', TASK_FROG_PROPERTY),
+        NotionTodoListEntity(coordinator, 'Notion Weekend Tasks', TASK_WEEKEND_PROPERTY),
+        NotionTodoListEntity(coordinator, 'Notion Quick 10min Tasks', TASK_10MIN_PROPERTY),
+        NotionTodoListEntity(coordinator, 'Notion Completed Tasks', TASK_COMPLETED_PROPERTY),
+    ]
+    
+    async_add_entities(entities)
 
 STATUS_IN_PROGRESS = 'In_progress'
 STATUS_ARCHIVED = 'Paused'
@@ -59,12 +73,14 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
     def __init__(
         self,
         coordinator: NotionDataUpdateCoordinator,
-        user: str,
+        name: str,
+        filter_property: str | None = None,
     ) -> None:
         """Initialize TodoListEntity."""
         super().__init__(coordinator=coordinator)
-        self._attr_unique_id = f"{user}-{user}"
-        self._attr_name = user
+        self._filter_property = filter_property
+        self._attr_unique_id = f"{name.lower().replace(' ', '_')}_{coordinator.config_entry.entry_id}"
+        self._attr_name = name
         self._status = {}
 
     @callback
@@ -75,20 +91,50 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
         else:
             items = []
             for task in self.coordinator.data['results']:
+                # Apply filter if specified
+                if self._filter_property is not None:
+                    filter_value = propHelper.get_property_by_id(self._filter_property, task)
+                    if not filter_value:  # Skip if filter property is False or None
+                        continue
+                
                 id = task['id']
                 status_value = propHelper.get_property_by_id(TASK_STATUS_PROPERTY, task)
                 self._status[id] = status_value
                 
                 # Default to NEEDS_ACTION if status not found or unknown
                 status = NOTION_TO_HASS_STATUS.get(status_value, TodoItemStatus.NEEDS_ACTION)
+                
+                # Get all properties
+                title = propHelper.get_property_by_id('title', task)
+                due_date = propHelper.get_property_by_id(TASK_DATE_PROPERTY, task)
+                frog_value = propHelper.get_property_by_id(TASK_FROG_PROPERTY, task)
+                weekend_value = propHelper.get_property_by_id(TASK_WEEKEND_PROPERTY, task)
+                quick_value = propHelper.get_property_by_id(TASK_10MIN_PROPERTY, task)
+                completed_value = propHelper.get_property_by_id(TASK_COMPLETED_PROPERTY, task)
+                project_value = propHelper.get_property_by_id(TASK_PROJECT_PROPERTY, task)
+                
+                # Build description with all attributes
+                description_parts = []
+                if project_value:
+                    description_parts.append(f"Project: {project_value}")
+                if frog_value:
+                    description_parts.append(f"Frog: {frog_value}")
+                if weekend_value:
+                    description_parts.append("Weekend task")
+                if quick_value:
+                    description_parts.append("Quick <10min")
+                if completed_value:
+                    description_parts.append("Completed ✓")
+                
+                description = " | ".join(description_parts) if description_parts else None
 
                 items.append(
                     TodoItem(
-                        summary=propHelper.get_property_by_id('title', task),
+                        summary=title,
                         uid=id,
                         status=status,
-                        description=None,
-                        due=propHelper.get_property_by_id(TASK_DATE_PROPERTY, task)
+                        description=description,
+                        due=due_date
                     )
                 )
             self._attr_todo_items = items

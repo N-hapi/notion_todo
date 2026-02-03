@@ -17,7 +17,6 @@ from .services import async_setup_services
 
 PLATFORMS: list[Platform] = [
     Platform.TODO,
-    Platform.SENSOR,
 ]
 
 
