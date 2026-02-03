@@ -113,21 +113,55 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
                 
             due_date = datetime.fromisoformat(item.due).date() if isinstance(item.due, str) else item.due
             
+            # Extract project and flags from description
+            project = None
+            is_frog = False
+            is_weekend = False
+            is_quick = False
+            
+            if item.description:
+                # Description format: "Project: X | Frog: True | Weekend task | Quick <10min | Completed ✓"
+                parts = item.description.split(' | ')
+                for part in parts:
+                    part = part.strip()
+                    if part.startswith('Project: '):
+                        project = part.replace('Project: ', '')
+                    elif part.startswith('Frog: '):
+                        is_frog = part.replace('Frog: ', '') == 'True'
+                    elif part == 'Weekend task':
+                        is_weekend = True
+                    elif part == 'Quick <10min':
+                        is_quick = True
+            
+            # Get the notion status from our stored mapping
+            notion_status = self._status.get(item.uid, 'Not_started')
+            
+            task_info = {
+                'summary': item.summary,
+                'project': project,
+                'uid': item.uid,
+                'completed': item.status == TodoItemStatus.COMPLETED,
+                'status': notion_status,  # Store the actual Notion status
+                'is_frog': is_frog,
+                'is_weekend': is_weekend,
+                'is_quick': is_quick
+            }
+            
             if due_date < today:
                 groups['past']['count'] += 1
-                groups['past']['tasks'].append(item.summary)
+                groups['past']['tasks'].append(task_info)
             elif due_date == today:
                 groups['today']['count'] += 1
-                groups['today']['tasks'].append(item.summary)
+                groups['today']['tasks'].append(task_info)
             else:
                 days_diff = (due_date - today).days
                 if 1 <= days_diff <= 7:
                     day_key = f'day_{days_diff}'
                     groups[day_key]['count'] += 1
-                    groups[day_key]['tasks'].append(item.summary)
+                    groups[day_key]['tasks'].append(task_info)
                 else:
                     groups['future']['count'] += 1
-                    groups['future']['tasks'].append(item.summary)
+                    groups['future']['tasks'].append(task_info)
         
         return groups
 
@@ -175,7 +209,7 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
                 completed_value = propHelper.get_property_by_id(TASK_COMPLETED_PROPERTY, task)
                 project_value = propHelper.get_property_by_id(TASK_PROJECT_PROPERTY, task)
                 
-                # Build description with all attributes
+                # Build description with all attributes (for compatibility)
                 description_parts = []
                 if project_value:
                     description_parts.append(f"Project: {project_value}")
