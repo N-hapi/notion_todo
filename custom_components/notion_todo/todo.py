@@ -83,6 +83,14 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
         self._attr_name = name
         self._status = {}
 
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes - EXPOSING TODO_ITEMS."""
+        attrs = super().extra_state_attributes or {}
+        # Expose todo_items as an attribute so templates can access them
+        attrs['todo_items'] = self._attr_todo_items
+        return attrs
+
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
