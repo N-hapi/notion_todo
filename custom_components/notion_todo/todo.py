@@ -1,6 +1,7 @@
 """A todo platform for Notion."""
 
 import asyncio
+from datetime import datetime, timedelta
 from typing import cast
 
 from homeassistant.components.todo import (
@@ -83,12 +84,65 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
         self._attr_name = name
         self._status = {}
 
+    def _group_tasks_by_date(self, items):
+        """Group tasks by their due date into categories."""
+        today = datetime.now().date()
+        
+        groups = {
+            'past': {'count': 0, 'tasks': []},
+            'today': {'count': 0, 'tasks': []},
+        }
+        
+        # Add next 7 days
+        for i in range(1, 8):
+            day_key = f'day_{i}'
+            date = today + timedelta(days=i)
+            groups[day_key] = {
+                'count': 0,
+                'tasks': [],
+                'date': date.isoformat(),
+                'day_name': date.strftime('%a %d. %b')  # e.g., "Wed 4. Feb"
+            }
+        
+        groups['future'] = {'count': 0, 'tasks': []}
+        
+        # Categorize each task
+        for item in items:
+            if not item.due:
+                continue
+                
+            due_date = datetime.fromisoformat(item.due).date() if isinstance(item.due, str) else item.due
+            
+            if due_date < today:
+                groups['past']['count'] += 1
+                groups['past']['tasks'].append(item.summary)
+            elif due_date == today:
+                groups['today']['count'] += 1
+                groups['today']['tasks'].append(item.summary)
+            else:
+                days_diff = (due_date - today).days
+                if 1 <= days_diff <= 7:
+                    day_key = f'day_{days_diff}'
+                    groups[day_key]['count'] += 1
+                    groups[day_key]['tasks'].append(item.summary)
+                else:
+                    groups['future']['count'] += 1
+                    groups['future']['tasks'].append(item.summary)
+        
+        return groups
+
     @property
     def extra_state_attributes(self):
-        """Return the state attributes - EXPOSING TODO_ITEMS."""
+        """Return the state attributes - EXPOSING TODO_ITEMS and FORECAST."""
         attrs = super().extra_state_attributes or {}
+        
         # Expose todo_items as an attribute so templates can access them
         attrs['todo_items'] = self._attr_todo_items
+        
+        # Add forecast grouping
+        if self._attr_todo_items:
+            attrs['forecast'] = self._group_tasks_by_date(self._attr_todo_items)
+        
         return attrs
 
     @callback
