@@ -120,28 +120,51 @@ class NotionApiClient:
             due (str | None): Due date in ISO format (YYYY-MM-DD) (optional)
         """
         from .const import TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY
-        task_template = await self._get_task_template()
-        task_data = task_template.copy()
         
-        # Decide which properties to keep based on whether we have a due date
-        properties_to_keep = ["title", TASK_STATUS_PROPERTY, TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY]
+        # Build properties from scratch instead of using template
+        properties = {}
+        
+        # Add title (required)
+        properties["Task name"] = {
+            "title": [
+                {
+                    "type": "text",
+                    "text": {
+                        "content": title
+                    }
+                }
+            ]
+        }
+        
+        # Add status
+        properties["Status"] = {
+            "status": {
+                "name": status
+            }
+        }
+        
+        # Add OmniFocus project
+        properties["OmniFocus project sync"] = {
+            "select": {
+                "name": omnifocus_project
+            }
+        }
+        
+        # Add due date if provided
         if due is not None:
-            properties_to_keep.append(TASK_DATE_PROPERTY)
+            properties["Due"] = {
+                "date": {
+                    "start": due
+                }
+            }
         
-        task_data["properties"] = propHelper.del_properties_except(
-            properties_to_keep, 
-            task_data["properties"]
-        )
-        task_data = propHelper.set_property_by_id("title", title, task_data)
-        task_data = propHelper.set_property_by_id(TASK_STATUS_PROPERTY, status, task_data)
-        task_data = propHelper.set_property_by_id(
-            TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY, 
-            omnifocus_project, 
-            task_data
-        )
-        
-        if due is not None:
-            task_data = propHelper.set_property_by_id(TASK_DATE_PROPERTY, due, task_data)
+        # Build the complete payload
+        task_data = {
+            "parent": {
+                "database_id": self._database_id
+            },
+            "properties": properties
+        }
         
         return await self._api_wrapper(
             method="post",
