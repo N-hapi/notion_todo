@@ -4,6 +4,7 @@ import logging
 
 DATE_FORMAT = '%Y-%m-%d'
 DATETIME_FORMAT = DATE_FORMAT + 'T%H:%M:%S.%f%z'
+
 class NotionPropertyHelper:
     """Helper class to parse Notion properties."""
 
@@ -42,7 +43,6 @@ class NotionPropertyHelper:
             del data['properties'][key]
         return data
 
-
     @staticmethod
     def _get_property_key_by_id(id, data):
         for name, attr in data['properties'].items():
@@ -59,7 +59,7 @@ class NotionPropertyHelper:
         elif prop_type == 'multi_select':
             return NotionPropertyHelper._parse_multi_select(prop)
         elif prop_type == 'select':
-            return NotionPropertyHelper._parse_select(prop)
+            return NotionPropertyHelper._parse_select(prop, value)
         elif prop_type == 'last_edited_by':
             return NotionPropertyHelper._parse_last_edited_by(prop)
         elif prop_type == 'last_edited_time':
@@ -113,11 +113,17 @@ class NotionPropertyHelper:
         return selected_items
 
     @staticmethod
-    def _parse_select(prop):
-        prop_value = prop['select']
-        if prop_value:
-            return prop_value['name']
-        return None
+    def _parse_select(prop, value=None):
+        if value:
+            prop['select'] = {'name': value}
+            if 'name' in prop:
+                del prop['name']
+            return prop
+        else:
+            prop_value = prop['select']
+            if prop_value:
+                return prop_value['name']
+            return None
 
     @staticmethod
     def _parse_last_edited_by(prop):
@@ -170,9 +176,12 @@ class NotionPropertyHelper:
         return item_list
 
     @staticmethod
-    def _status(prop, value = None):
+    def _status(prop, value=None):
         if value:
-            return {"type": "status", "status": {"id": value}}
+            prop['status'] = {'id': value}
+            if 'name' in prop:
+                del prop['name']
+            return prop
         else:
             status = prop['status']
             if status and 'name' in status:
