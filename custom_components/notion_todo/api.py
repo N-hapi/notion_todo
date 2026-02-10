@@ -104,37 +104,57 @@ class NotionApiClient:
             data={"properties": update_properties}
         )
 
-    async def create_task(self, title: str, status: str, omnifocus_project: str = "Household") -> any:
+    async def create_task(
+        self, 
+        title: str, 
+        status: str, 
+        omnifocus_project: str = "Household",
+        due: str | None = None
+    ) -> any:
         """Create a new task in Notion.
 
         Args:
             title (str): Title of the task
             status (str): Status of the task
-            omnifocus_project (str): Project for OmniFocus project sync (default: Household)
+            omnifocus_project (str): Project for OmniFocus (default: Household)
+            due (str | None): Due date in ISO format (YYYY-MM-DD) (optional)
         """
         from .const import TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY
         task_template = await self._get_task_template()
         task_data = task_template.copy()
-        task_data["properties"] = propHelper.del_properties_except(["title", TASK_STATUS_PROPERTY, TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY], task_data["properties"])
+        
+        # Decide which properties to keep based on whether we have a due date
+        properties_to_keep = ["title", TASK_STATUS_PROPERTY, TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY]
+        if due is not None:
+            properties_to_keep.append(TASK_DATE_PROPERTY)
+        
+        task_data["properties"] = propHelper.del_properties_except(
+            properties_to_keep, 
+            task_data["properties"]
+        )
         task_data = propHelper.set_property_by_id("title", title, task_data)
         task_data = propHelper.set_property_by_id(TASK_STATUS_PROPERTY, status, task_data)
-        # Set OmniFocus project sync field (select)
-        task_data = propHelper.set_property_by_id(TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY, omnifocus_project, task_data)
+        task_data = propHelper.set_property_by_id(
+            TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY, 
+            omnifocus_project, 
+            task_data
+        )
+        
+        if due is not None:
+            task_data = propHelper.set_property_by_id(TASK_DATE_PROPERTY, due, task_data)
+        
         return await self._api_wrapper(
             method="post",
             url=f"{NOTION_URL}/pages",
             headers=self._headers,
-            data=task_data)
+            data=task_data
+        )
 
-    async def delete_task(self,
-                          task_id: str):
+    async def delete_task(self, task_id: str):
         """Delete a task in Notion.
 
         Args:
             task_id (str): id of the task
-
-        Returns:
-            _type_: _description_
 
         """
         return await self._api_wrapper(

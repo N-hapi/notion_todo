@@ -25,15 +25,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator = NotionDataUpdateCoordinator(
         hass=hass,
-        client=NotionApiClient(token=entry.data[CONF_ACCESS_TOKEN], database_id=entry.data[CONF_DATABASE_ID],
-                               session=async_get_clientsession(hass)),
+        client=NotionApiClient(
+            token=entry.data[CONF_ACCESS_TOKEN],
+            database_id=entry.data[CONF_DATABASE_ID],
+            session=async_get_clientsession(hass)
+        ),
     )
     await coordinator.async_config_entry_first_refresh()
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     
-    # Set up services
+    # Set up services only once (not per entry)
     await async_setup_services(hass)
 
     return True
