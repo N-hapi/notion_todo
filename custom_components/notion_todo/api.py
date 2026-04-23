@@ -157,6 +157,14 @@ class NotionApiClient:
                     "start": due
                 }
             }
+
+        properties["unmovable by AI"] = {
+            "checkbox": True
+        }
+
+        properties["Tags"] = {
+            "multi_select": [{"name": "HA-Auto"}]
+        }
         
         # Build the complete payload
         task_data = {

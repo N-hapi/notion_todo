@@ -1,6 +1,7 @@
 """A todo platform for Notion."""
 
 import asyncio
+import re
 from datetime import datetime, timedelta
 from typing import cast
 
@@ -224,9 +225,14 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
                 
                 description = " | ".join(description_parts) if description_parts else None
 
+                display_title = title
+                if due_date and 'T' in str(due_date):
+                    time_str = datetime.fromisoformat(due_date).strftime('%H:%M')
+                    display_title = f"{title.rstrip()} @ {time_str}"
+
                 items.append(
                     TodoItem(
-                        summary=title,
+                        summary=display_title,
                         uid=id,
                         status=status,
                         description=description,
@@ -250,8 +256,9 @@ class NotionTodoListEntity(CoordinatorEntity[NotionDataUpdateCoordinator], TodoL
         if self._status[uid] == STATUS_ARCHIVED and status == STATUS_DONE:
             status = STATUS_ARCHIVED
 
+        clean_title = re.sub(r' @ \d{2}:\d{2}$', '', item.summary)
         await self.coordinator.client.update_task(task_id=uid,
-                                                  title=item.summary,
+                                                  title=clean_title,
                                                   status=status,
                                                   due=item.due,
                                                   description=item.description)

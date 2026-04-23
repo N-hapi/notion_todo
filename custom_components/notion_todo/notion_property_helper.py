@@ -94,8 +94,7 @@ class NotionPropertyHelper:
                 return None
             start_date = prop['date']['start']
             if start_date and len(start_date) > 10:
-                # Has time component - parse as datetime and return just the date part as string
-                return datetime.strptime(start_date, DATETIME_FORMAT).date().isoformat()
+                return datetime.strptime(start_date, DATETIME_FORMAT).isoformat()
             elif start_date:
                 # Just a date - parse and return as ISO string
                 return datetime.strptime(start_date, DATE_FORMAT).date().isoformat()
