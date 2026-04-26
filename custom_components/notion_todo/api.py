@@ -149,6 +149,13 @@ class NotionApiClient:
                 "name": omnifocus_project
             }
         }
+
+        # Link to Household project
+        properties["Project"] = {
+            "relation": [
+                {"id": "c8fc4c85-fed8-4069-9063-593b1d4b7515"}
+            ]
+        }
         
         # Add due date if provided
         if due is not None:
