@@ -23,6 +23,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         task_name = call.data.get("task_name")
         project = call.data.get("omnifocus_project", "Household")
         due_date_str = call.data.get("due_date")
+        under_10_min = call.data.get("under_10_min", False)
         
         # Parse due date if provided
         due_date = None
@@ -57,7 +58,8 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             title=task_name,
             status="Not_started",
             omnifocus_project=project,
-            due=due_date  # Now passing ISO date string
+            due=due_date,
+            under_10_min=under_10_min
         )
 
         # Refresh data
@@ -70,6 +72,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         schema=vol.Schema({
             vol.Required("task_name"): cv.string,
             vol.Optional("omnifocus_project", default="Household"): cv.string,
-            vol.Optional("due_date"): cv.string,  # Accepts "today", "YYYY-MM-DD", or ISO format
+            vol.Optional("due_date"): cv.string,
+            vol.Optional("under_10_min", default=False): cv.boolean,
         }),
     )

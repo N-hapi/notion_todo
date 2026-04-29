@@ -105,11 +105,12 @@ class NotionApiClient:
         )
 
     async def create_task(
-        self, 
-        title: str, 
-        status: str, 
+        self,
+        title: str,
+        status: str,
         omnifocus_project: str = "Household",
-        due: str | None = None
+        due: str | None = None,
+        under_10_min: bool = False
     ) -> any:
         """Create a new task in Notion.
 
@@ -118,6 +119,7 @@ class NotionApiClient:
             status (str): Status of the task
             omnifocus_project (str): Project for OmniFocus (default: Household)
             due (str | None): Due date in ISO format (YYYY-MM-DD) (optional)
+            under_10_min (bool): Set the <10min checkbox (optional)
         """
         from .const import TASK_OMNIFOCUS_PROJECT_SYNC_PROPERTY
         
@@ -168,6 +170,11 @@ class NotionApiClient:
         properties["unmovable by AI"] = {
             "checkbox": True
         }
+
+        if under_10_min:
+            properties["<10min"] = {
+                "checkbox": True
+            }
 
         properties["Tags"] = {
             "multi_select": [{"name": "HA-Auto"}]
