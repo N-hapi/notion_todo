@@ -1,0 +1,23 @@
+create_task:
+  name: Create Task
+  description: Create a new task in the Notion ToDo database.
+  fields:
+    task_name:
+      name: Task Name
+      description: The name/title of the task.
+      required: true
+      selector:
+        text:
+    omnifocus_project:
+      name: OmniFocus Project
+      description: The project to assign the task to (default is Household).
+      required: false
+      default: Household
+      selector:
+        text:
+    due_date:
+      name: Due Date
+      description: Due date for the task. Accepts "today", "YYYY-MM-DD", or ISO format.
+      required: false
+      selector:
+        text:
