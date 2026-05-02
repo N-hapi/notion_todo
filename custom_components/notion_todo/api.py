@@ -172,7 +172,7 @@ class NotionApiClient:
         }
 
         if under_10_min:
-            properties["<10min"] = {
+            properties["uUq["] = {
                 "checkbox": True
             }
 
